@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "########## Using R as a GIS #############\n\n# read raster files (e.g. *.tif, *.nc)\n\nlibrary(raster)\n\n# setwd(\"/Volumes/TRANSCEND 1/Climatic_data/cru_ts_3.24.01 2/pre\") # load my storage\n# qq<-raster(\"cru_ts3.24.01.1901.2015.pre.dat.nc\")    #讀cru的雨量資料(wrong way, 這個指令只能讀一層)\n# qq<-brick(\"cru_ts3.24.01.1901.2015.pre.dat.nc\")     #讀cru的雨量資料(可以讀多層)\n# setwd(\"/Volumes/Transcend/Teaching/R_GIS/R_GIS\")    # load my working space\n# rr<-crop(qq, extent(115,125,20,30))                 #把台灣的資料切出來\n# writeRaster(rr,\"cru_pre_tw.tif\",\"GTiff\")            #輸出成新的GeoTiff檔\n\nmy.raster<-raster(\"cru_pre_tw.tif\")   #讀資料(只讀了一層)\nmy.raster<-brick(\"cru_pre_tw.tif\")    #讀資料(讀很多層)\nmy.raster                             #全部圖層的summary\nmy.raster[[1]]                        #第一層的summary\nplot(my.raster[[1]])                  #畫第一層\n\n# read vector files (e.g. *.shp)\nlibrary(maptools)\nmy.polygon <- readShapeSpatial(\"test.shp\")\n\n# extract values from a raster file\nextract(my.raster,150)                                      # 以網格編號讀取資料\nextract(my.raster,SpatialPoints(matrix(c(115.5,25.5),1,2))) # 以空間座標讀取資料\nextract(my.raster,my.polygon)                               # 以多邊形讀取資料\n\n########## Writing R functions #########\n\nf1<-function(x){x^2+2*x+5}            #(範例)自己寫的超簡單小程式\nf1(5)                                 #對一個對象(數字)執行程式\n\n#lapply\naa<-seq(1:10)                         #產生一串數列\nunlist(lapply(aa,f1))                 #對數列裡的每個數字執行相同的程式\n\n#apply\npp<-matrix(my.raster[1],12,length(my.raster[1])/12) #產生月*年的雨量矩陣\napply(pp,1,max)                                     #挑出橫向最大值\napply(pp,2,max)                                     #挑出縱向最大值\n\n# raster::calc                        #對raster做運算\nmy.calc<-calc(my.raster,f1)\nmy.raster[[1]]\nmy.calc[[1]]\n\n## 範例：計算年間雨量變異度\n\n#算法一：先算年平均雨量，再算平均值在115年間的變異程度\nf2<-function(x){\n  qq2<-matrix(x,12,length(x)/12)*10\n  qq3<-sd(apply(qq2,2,mean),na.rm=T)\n  return(qq3)\n}\n\npre_var <- calc(my.raster, f2)\nplot(pre_var)\n# writeRaster(pre_var, \"pre_var_among_year.tif\", \"GTiff\")\n\n# 另一種寫法\nf3<-function(x){\n  f2<-function(x){\n    qq2<-matrix(x,12,length(x)/12)*10\n    qq3<-sd(apply(qq2,2,mean),na.rm=T)\n    return(qq3)\n  }\n  if(is.na(sum(my.raster[x]))==T){\n    return(NA)\n  }else{\n    return(f2(my.raster[x]))\n  }\n}\n\npre_var3<-raster(my.raster, layer=0)\nvalues(pre_var3)<-unlist(lapply(seq(1:400),f3))\nplot(pre_var3)\n\n\n#算法二：先算每個月份在115年間的變異程度，再取12個月份的平均\nf4<-function(x){\n  qq2<-matrix(x,12,length(x)/12)*10\n  qq3<-mean(apply(qq2,1,sd),na.rm=T)\n  return(qq3)\n}\n\npre_var2 <- calc(my.raster, f4)\nplot(pre_var2)\n\n\n## 範例：埋葬蟲適合繁殖的溫度範圍\nf_bb<-function(x){\n  f1<-function(x,lower,upper){\n    qq<-x\n    qq[is.na(x)==F&x>=upper]<-0\n    qq[is.na(x)==F&x<upper&qq>lower]<-1\n    qq[is.na(x)==F&x<=lower]<-0\n    return(qq)\n  }\n  qq2<-f1(x,lower=8.2,upper=21.7)\n  return(qq2)\n}\n\n\n\n",
+    "created" : 1494212472531.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4056564649",
+    "id" : "8FB2114C",
+    "lastKnownWriteTime" : 1494224653,
+    "last_content_update" : 1494224653684,
+    "path" : "/Volumes/Transcend/Teaching/R_GIS/R_GIS/Course 20170508.R",
+    "project_path" : "Course 20170508.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
